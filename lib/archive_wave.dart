@@ -244,31 +244,37 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
                           }
                           return false;
                         },
-                        child: Scrollable(
-                          key: const ValueKey('archive-file-carousel'),
-                          controller: _scroll,
-                          axisDirection: AxisDirection.right,
-                          physics: widget.books.length == 1
-                              ? const NeverScrollableScrollPhysics()
-                              : _ArchiveSnapPhysics(pose: _pose),
-                          viewportBuilder: (context, offset) => _ShelfRow(
-                            offset: offset,
-                            pose: _pose,
-                            spine: spine,
-                            cover: cover,
-                            height: height,
-                            dark: dark,
-                            children: [
-                              for (var i = 0; i < _pose.poolCount; i++)
-                                _volume(
-                                  context,
-                                  widget.books[_pose.bookIndex(i)],
-                                  i,
-                                  spine,
-                                  cover,
-                                  height,
-                                ),
-                            ],
+                        // Japanese jackets carry the spine on the right edge of the front cover.
+                        // Mirror the rendered bank, then counter-mirror each printed face.
+                        child: Transform(
+                          alignment: Alignment.center,
+                          transform: Matrix4.diagonal3Values(-1, 1, 1),
+                          child: Scrollable(
+                            key: const ValueKey('archive-file-carousel'),
+                            controller: _scroll,
+                            axisDirection: AxisDirection.right,
+                            physics: widget.books.length == 1
+                                ? const NeverScrollableScrollPhysics()
+                                : _ArchiveSnapPhysics(pose: _pose),
+                            viewportBuilder: (context, offset) => _ShelfRow(
+                              offset: offset,
+                              pose: _pose,
+                              spine: spine,
+                              cover: cover,
+                              height: height,
+                              dark: dark,
+                              children: [
+                                for (var i = 0; i < _pose.poolCount; i++)
+                                  _volume(
+                                    context,
+                                    widget.books[_pose.bookIndex(i)],
+                                    i,
+                                    spine,
+                                    cover,
+                                    height,
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -414,44 +420,49 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
       children: [
         ExcludeSemantics(
           child: RepaintBoundary(
-            child: ContentPanel(
-              key: ValueKey('archive-spine-$index'),
-              radius: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 9),
-              // Solid physical faces occlude other files; milk comes from shading,
-              // not alpha that lets readable rear text bleed through the surface.
-              backgroundColor: dark
-                  ? ArchiveDesign.darkRaised
-                  : const Color(0xFFF2F0E9),
-              onTap: tap,
-              child: MediaQuery.withNoTextScaling(
-                child: Column(
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: ArchiveCode(number.toString().padLeft(2, '0')),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: Center(
-                        child: AppText(
-                          title,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            height: 1.08,
-                            fontWeight: FontWeight.w600,
+            // Printed spine surface counter-mirrors so its lettering stays readable.
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.diagonal3Values(-1, 1, 1),
+              child: ContentPanel(
+                key: ValueKey('archive-spine-$index'),
+                radius: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 9),
+                // Solid physical faces occlude other files; milk comes from shading,
+                // not alpha that lets readable rear text bleed through the surface.
+                backgroundColor: dark
+                    ? ArchiveDesign.darkRaised
+                    : const Color(0xFFF2F0E9),
+                onTap: tap,
+                child: MediaQuery.withNoTextScaling(
+                  child: Column(
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: ArchiveCode(number.toString().padLeft(2, '0')),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: Center(
+                          child: AppText(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 9,
+                              height: 1.08,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Icon(
-                      CupertinoIcons.circle,
-                      size: 6,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Icon(
+                        CupertinoIcons.circle,
+                        size: 6,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -459,44 +470,49 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
         ),
         ExcludeSemantics(
           child: RepaintBoundary(
-            child: ContentPanel(
-              key: ValueKey('archive-cover-$index'),
-              radius: 0,
-              padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
-              backgroundColor: dark
-                  ? ArchiveDesign.darkSurface
-                  : ArchiveDesign.milk,
-              onTap: tap,
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ArchiveCode(
-                          'NO.${number.toString().padLeft(3, '0')}',
+            // Cover artwork counter-mirrors so the bank mirror never reverses it.
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.diagonal3Values(-1, 1, 1),
+              child: ContentPanel(
+                key: ValueKey('archive-cover-$index'),
+                radius: 0,
+                padding: const EdgeInsets.fromLTRB(10, 9, 10, 8),
+                backgroundColor: dark
+                    ? ArchiveDesign.darkSurface
+                    : ArchiveDesign.milk,
+                onTap: tap,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ArchiveCode(
+                            'NO.${number.toString().padLeft(3, '0')}',
+                          ),
                         ),
-                      ),
-                      if (widget.sourceLabel?.call(book) case final label?)
-                        BookSourceBadge(label),
-                    ],
-                  ),
-                  const SizedBox(height: 7),
-                  Expanded(
-                    child: _LazyArchiveCover(
-                      book: book,
-                      pose: _pose,
-                      index: index,
-                      width: cover - 20,
-                      height: (cover - 20) * 166 / 118,
-                      // Only the focused copy participates in Hero. Its stable
-                      // identity survives pool wrapping and viewport resizing.
-                      heroTag: CoverHeroTag(this, book.id),
-                      reduced: _reduced,
+                        if (widget.sourceLabel?.call(book) case final label?)
+                          BookSourceBadge(label),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  ArchiveCode(ArchiveDesign.fileCode(book.id)),
-                ],
+                    const SizedBox(height: 7),
+                    Expanded(
+                      child: _LazyArchiveCover(
+                        book: book,
+                        pose: _pose,
+                        index: index,
+                        width: cover - 20,
+                        height: (cover - 20) * 166 / 118,
+                        // Only the focused copy participates in Hero. Its stable
+                        // identity survives pool wrapping and viewport resizing.
+                        heroTag: CoverHeroTag(this, book.id),
+                        reduced: _reduced,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    ArchiveCode(ArchiveDesign.fileCode(book.id)),
+                  ],
+                ),
               ),
             ),
           ),
