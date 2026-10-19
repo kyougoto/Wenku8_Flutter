@@ -12,6 +12,9 @@ val releaseKeys = Properties().apply {
     if (releaseKeyFile.isFile) releaseKeyFile.inputStream().use { load(it) }
 }
 val readerPreview = providers.gradleProperty("wenkuReaderPreview").orNull == "true"
+// Side-by-side test installs: build under a distinct applicationId so a CI
+// artifact never replaces the user's release app (and vice versa).
+val ciTest = providers.gradleProperty("wenkuCiTest").orNull == "true"
 val catalogProbe = providers.gradleProperty("wenkuCatalogProbe").orNull == "true"
 check(!catalogProbe || readerPreview) { "Account read probes are restricted to the reader preview" }
 
@@ -34,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.mewx.wenku8_flutter"
+        applicationId = if (ciTest) "org.mewx.wenku8_flutter_test" else "org.mewx.wenku8_flutter"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
