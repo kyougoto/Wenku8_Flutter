@@ -46,7 +46,7 @@ jobs:
           flutter build apk --release \
             --target-platform "$TARGET_PLATFORM" \
             --dart-define="UPDATE_REPOSITORY=$UPDATE_REPOSITORY" \
-            --gradle-arg=-PwenkuCiTest=true
+            --android-project-arg=wenkuCiTest=true
       - name: Verify applicationId
         run: |
           python3 - <<'PY'
