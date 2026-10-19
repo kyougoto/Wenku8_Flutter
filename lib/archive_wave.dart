@@ -1051,8 +1051,8 @@ class ArchiveShelfSceneRender extends RenderBox
         path,
         Paint()
           ..shader = LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [ink.withValues(alpha: .10), ink.withValues(alpha: 0)],
           ).createShader(path.getBounds()),
       );
