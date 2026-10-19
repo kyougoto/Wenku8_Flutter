@@ -404,8 +404,6 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
     final dark = Theme.of(context).brightness == Brightness.dark;
     final number = _pose.bookIndex(index) + 1;
     void tap() => _tap(index);
-    final glyphs = book.title.characters.toList();
-    final title = [...glyphs.take(7), if (glyphs.length > 7) '…'].join('\n');
     return _BookVolume(
       key: ValueKey('archive-slot-$index'),
       pose: _pose,
@@ -444,15 +442,7 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
                       const SizedBox(height: 10),
                       Expanded(
                         child: Center(
-                          child: AppText(
-                            title,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 9,
-                              height: 1.08,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _ArchiveSpineTitle(title: book.title),
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -518,6 +508,99 @@ class _ArchiveFileCarouselState extends State<ArchiveFileCarousel>
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Latin script cannot stack one glyph per line, so Latin runs rotate into a
+/// single vertical line while CJK glyphs keep the spine's stacked rhythm.
+class _ArchiveSpineTitle extends StatelessWidget {
+  const _ArchiveSpineTitle({required this.title});
+  final String title;
+
+  // The spine's title area fits roughly this many glyphs at the title size.
+  static const _maxCharacters = 24;
+  static const _style = TextStyle(
+    fontSize: 9,
+    height: 1.08,
+    fontWeight: FontWeight.w600,
+  );
+
+  /// Latin, Greek, Cyrillic and their typographic punctuation read horizontally.
+  static bool _horizontal(String character) {
+    if (character.isEmpty) return false;
+    final code = character.codeUnitAt(0);
+    if (code < 0x0500) return true;
+    return code >= 0x2010 && code <= 0x2027;
+  }
+
+  /// Consecutive horizontal-script characters become one rotated run; every
+  /// other glyph stays a single stacked character.
+  List<String> get _runs {
+    final runs = <String>[];
+    final buffer = StringBuffer();
+    var consumed = 0;
+    var truncated = false;
+    for (final character in title.characters) {
+      if (consumed >= _maxCharacters) {
+        truncated = true;
+        break;
+      }
+      consumed++;
+      if (_horizontal(character)) {
+        buffer.write(character);
+        continue;
+      }
+      final run = buffer.toString().trim();
+      buffer.clear();
+      if (run.isNotEmpty) runs.add(run);
+      runs.add(character);
+    }
+    final tail = buffer.toString().trim();
+    if (tail.isNotEmpty) runs.add(tail);
+    if (truncated) {
+      if (runs.isNotEmpty && _horizontal(runs.last)) {
+        runs[runs.length - 1] = runs.last + '…';
+      } else {
+        runs.add('…');
+      }
+    }
+    return runs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final runs = _runs;
+    final rotate = runs.any((run) => run != '…' && _horizontal(run));
+    if (!rotate) {
+      // Nothing to rotate: keep the existing stacked Chinese spine title.
+      final glyphs = title.characters.toList();
+      final stacked = [
+        ...glyphs.take(7),
+        if (glyphs.length > 7) '…',
+      ].join('\n');
+      return AppText(stacked, textAlign: TextAlign.center, style: _style);
+    }
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final run in runs)
+            if (run != '…' && _horizontal(run))
+              RotatedBox(
+                quarterTurns: 1,
+                child: AppText(
+                  run,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: _style,
+                ),
+              )
+            else
+              AppText(run, textAlign: TextAlign.center, style: _style),
+        ],
+      ),
     );
   }
 }
