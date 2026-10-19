@@ -5,10 +5,7 @@ abstract final class ArchiveShelfGeometry {
   // A physical bank, not a full-window banner. Keep the same projection and
   // book proportions on phones, tablets and retained browsing panes.
   static const maxViewportWidth = 520.0;
-  // Japanese light novel jackets wrap the spine on the right-hand side of the
-  // front cover, so the bank projects towards screen-left: the printed spine
-  // plate lands on the right edge of the cover instead of the left one.
-  static const depthX = -.66, depthY = -.30, rowStep = 2.5;
+  static const depthX = .66, depthY = -.30, rowStep = 2.5;
   static double spineFor(double width) => (width * .043).clamp(14.0, 18.0);
   static double pitchFor(double width) => spineFor(width) + 11;
   static double coverFor(double width) => (width * .32).clamp(100.0, 128.0);
